@@ -1,0 +1,13 @@
+- hosts: all
+  become: true
+  tags: deploy
+
+  tasks:
+    - name: Start Redmine in conteiner
+      community.docker.docker_container:
+        image: redmine:latest
+        platform: linux/amd64
+        state: started
+        restart: true
+        ports:
+          - "80:3000"
