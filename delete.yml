@@ -1,0 +1,35 @@
+- name: Удаление Redmine и связанных ресурсов
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Остановить и удалить контейнер Redmine
+      community.docker.docker_container:
+        name: redmine
+        state: absent
+      ignore_errors: yes
+
+    - name: Удалить образ Redmine
+      community.docker.docker_image:
+        name: redmine:latest
+        state: absent
+      ignore_errors: yes
+
+
+    - name: Удалить тома, связанные с Redmine
+      ansible.builtin.command: >
+        docker volume rm $(docker volume ls -qf "name=redmine")
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Удалить сеть, связанную с Redmine (если создавалась отдельная сеть)
+      ansible.builtin.command: >
+        docker network rm redmine_network
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Удалить все контейнеры и образы (если необходимо)
+      community.docker.docker_prune:
+        all: yes
+        volumes: yes
+      when: prune_all | default(false)
