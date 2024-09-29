@@ -1,35 +1,82 @@
-- name: Удаление Redmine и связанных ресурсов
+---
+- name: Uninstall and remove Redmine and Datadog
   hosts: all
-  become: yes
+  become: true
+  vars_files:
+    - group_vars/webservers/vault.yml
 
   tasks:
-    - name: Остановить и удалить контейнер Redmine
+    - name: Stop and remove Redmine Docker container
       community.docker.docker_container:
         name: redmine
         state: absent
-      ignore_errors: yes
+      tags:
+        - remove
 
-    - name: Удалить образ Redmine
-      community.docker.docker_image:
-        name: redmine:latest
+    - name: Check if Datadog Agent is installed
+      ansible.builtin.shell: |
+        systemctl status datadog-agent
+      register: datadog_agent_status
+      ignore_errors: true
+      changed_when: false
+
+    - name: Stop and disable Datadog Agent
+      ansible.builtin.systemd:
+        name: datadog-agent
+        state: stopped
+        enabled: false
+      when: datadog_agent_status.rc == 0
+      ignore_errors: true
+      tags:
+        - remove
+
+    - name: Uninstall Datadog Agent package
+      ansible.builtin.package:
+        name: datadog-agent
         state: absent
-      ignore_errors: yes
+      tags:
+        - remove
 
+    - name: Change ownership of Datadog configuration directory
+      ansible.builtin.file:
+        path: /etc/datadog-agent
+        owner: root
+        group: root
+        recurse: true
+      tags:
+        - remove
 
-    - name: Удалить тома, связанные с Redmine
-      ansible.builtin.command: >
-        docker volume rm $(docker volume ls -qf "name=redmine")
-      ignore_errors: yes
-      changed_when: false
+    - name: Remove Datadog Agent configuration directory
+      ansible.builtin.file:
+        path: /etc/datadog-agent
+        state: absent
+      tags:
+        - remove
 
-    - name: Удалить сеть, связанную с Redmine (если создавалась отдельная сеть)
-      ansible.builtin.command: >
-        docker network rm redmine_network
-      ignore_errors: yes
-      changed_when: false
+    - name: Remove Datadog Agent log directory
+      ansible.builtin.file:
+        path: /var/log/datadog
+        state: absent
+      tags:
+        - remove
 
-    - name: Удалить все контейнеры и образы (если необходимо)
-      community.docker.docker_prune:
-        all: yes
-        volumes: yes
-      when: prune_all | default(false)
+    - name: Remove Datadog Agent data directory
+      ansible.builtin.file:
+        path: /var/lib/datadog-agent
+        state: absent
+      tags:
+        - remove
+
+    - name: Remove Docker (optional, if you want to uninstall Docker)
+      ansible.builtin.package:
+        name: docker
+        state: absent
+      tags:
+        - remove
+
+    - name: Remove pip (optional, if you want to uninstall pip)
+      ansible.builtin.package:
+        name: python3-pip
+        state: absent
+      tags:
+        - remove

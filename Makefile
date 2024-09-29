@@ -7,6 +7,9 @@ install:
 deploy:
 	ansible-playbook playbook.yml -i inventory.ini --tags "deploy" --ask-vault-pass
 
+monitor:
+	ansible-playbook playbook.yml -i inventory.ini --tags "monitor" --ask-vault-pass
+
 delete:
 	ansible-playbook delete.yml -i inventory.ini
 	

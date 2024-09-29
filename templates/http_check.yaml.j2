@@ -1,0 +1,16 @@
+init_config:
+
+instances:
+  - name: Application HTTP Check
+    url: "http://localhost:80"
+    timeout: 5
+    headers:
+      User-Agent: DatadogAgent/1.0
+    tags:
+      - app:redmine
+      - env:production
+    thresholds:
+      critical: 500
+      warning: 400
+    notify_no_data: true
+    no_data_timeframe: 10

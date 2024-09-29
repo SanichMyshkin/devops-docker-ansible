@@ -1,3 +1,7 @@
 roles:
   - name: geerlingguy.pip
   - name: geerlingguy.docker
+  - name: DataDog.datadog
+
+collections:
+  - name: datadog.dd

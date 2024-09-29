@@ -3,18 +3,19 @@
   hosts: all
   become: true
   vars_files:
-    - group_vars/webservers/vault.yml  # Используем зашифрованные переменные
+    - group_vars/webservers/vault.yml # Используем зашифрованные переменные
 
   roles:
-    - role: geerlingguy.docker
+    - role: geerlingguy.docker # Установка Docker
       tags:
         - install
-    - role: geerlingguy.pip
+
+    - role: geerlingguy.pip # Установка pip
       tags:
         - install
 
   tasks:
-    - name: Start Redmine in container
+    - name: Start Redmine in a Docker container
       community.docker.docker_container:
         image: redmine:latest
         name: redmine
@@ -28,5 +29,50 @@
           REDMINE_DB_PASSWORD: "{{ REDMINE_DB_PASSWORD }}"
           REDMINE_DB_PORT: "{{ REDMINE_DB_PORT }}"
           REDMINE_DB_DATABASE: "{{ REDMINE_DB_DATABASE }}"
+      tags:
+        - deploy
+
+- name: Install and configure Datadog Agent on webservers
+  hosts: webservers
+  become: true
+  vars_files:
+    - group_vars/webservers/vault.yml
+
+  roles:
+    - role: DataDog.datadog
+      tags:
+        - install
+
+  tasks:
+    - name: Install Datadog Agent
+      include_role:
+        name: DataDog.datadog
+      vars:
+        datadog_api_key: "{{ datadog_api_key }}"
+        datadog_site: datadoghq.eu
+      tags:
+        - delpoy
+
+    - name: Ensure Datadog Agent is running
+      ansible.builtin.systemd:
+        name: datadog-agent
+        state: started
+        enabled: true
+      tags:
+        - delpoy
+
+    - name: Create http_check configuration file
+      ansible.builtin.template:
+        src: templates/http_check.yaml.j2 # Шаблон файла конфигурации
+        dest: /etc/datadog-agent/conf.d/http_check.d/conf.yaml
+      notify: Restart Datadog Agent
+      tags:
+        - deploy
+
+  handlers:
+    - name: Restart Datadog Agent
+      ansible.builtin.systemd:
+        name: datadog-agent
+        state: restarted
       tags:
         - deploy
