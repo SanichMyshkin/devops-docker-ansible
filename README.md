@@ -1,6 +1,4 @@
-### Hexlet tests and linter status:
-[![Actions Status](https://github.com/SanichMyshkin/devops-for-programmers-project-76/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/SanichMyshkin/devops-for-programmers-project-76/actions)
-
+# Деплой Docker-образов с помощью Ansible
 
 Данный репозиторий развертывает веб-сервис Redmine из контейнера Docker с помощью Ansible, а также устанавливает агент мониторинга Datadog
 
